@@ -28,7 +28,7 @@ from fl_server import FedAvgStrategy, save_partition_summary
 # ═══════════════════════════════════════════════════════════
 # CONFIGURATION  —  the only two switches you need per run
 # ═══════════════════════════════════════════════════════════
-PARTITION_MODE = "iid"        # "iid" or "dirichlet"
+PARTITION_MODE = "dirichlet"        # "iid" or "dirichlet"
 STRATEGY_MODE  = "fedavg"     # "fedavg" or "fedprox"
 
 # FedProx proximal term strength. Ignored when STRATEGY_MODE

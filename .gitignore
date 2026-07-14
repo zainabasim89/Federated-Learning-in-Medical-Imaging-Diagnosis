@@ -6,3 +6,7 @@ Otoscopic_Data/Chronic Otitis Media
 Otoscopic_Data/Myringosclerosis
 Otoscopic_Data/Normal
 /venv
+/results_centralized_4class
+/results_fedavg_dirichlet_4class
+/results_fedavg_iid_4class
+/results_fedprox_dirichlet_4class
