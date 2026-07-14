@@ -1,0 +1,20 @@
+{
+  "algorithm": "Centralized",
+  "task": "Multiclass (4-class)",
+  "num_classes": 4,
+  "class_names": [
+    "Chronic otitis media",
+    "Earwax plug",
+    "Myringosclerosis",
+    "Normal"
+  ],
+  "central_epochs_budget": 10,
+  "batch_size": 16,
+  "lr": 0.001,
+  "es_patience": 3,
+  "seed": 42,
+  "val_ratio": 0.15,
+  "freeze_backbone": true,
+  "model": "MobileNetV2",
+  "dataset": "Ear Disease - Chile (Viscaino et al. 2020)"
+}

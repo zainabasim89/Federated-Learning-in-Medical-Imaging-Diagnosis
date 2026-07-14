@@ -1,0 +1,26 @@
+{
+  "algorithm": "FedAvg",
+  "strategy_mode": "fedavg",
+  "mu": 0.0,
+  "task": "Multiclass (4-class)",
+  "num_classes": 4,
+  "class_names": [
+    "Chronic otitis media",
+    "Earwax plug",
+    "Myringosclerosis",
+    "Normal"
+  ],
+  "num_clients": 3,
+  "num_rounds": 5,
+  "partition_mode": "dirichlet",
+  "alpha": 0.5,
+  "local_epochs": 10,
+  "batch_size": 16,
+  "lr": 0.001,
+  "es_patience": 3,
+  "seed": 42,
+  "val_ratio": 0.15,
+  "freeze_backbone": true,
+  "model": "MobileNetV2",
+  "dataset": "Ear Disease - Chile (Viscaino et al. 2020)"
+}
