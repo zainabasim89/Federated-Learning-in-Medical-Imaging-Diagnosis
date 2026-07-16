@@ -1,4 +1,4 @@
-#updated dataset file
+#updated dataset file — Otoscopic Image Dataset (5-class, flat layout)
 import os
 import numpy as np
 from PIL import Image
@@ -41,68 +41,70 @@ class TransformSubset(Dataset):
 
 
 # =========================================================
-# EAR DISEASE DATASET  (Chile — Viscaino et al., 2020)
-# Native 4-class multiclass task:
-#   Normal, Earwax plug, Myringosclerosis, Chronic otitis media
-# (exact folder names auto-detected from disk, so slight
-# naming differences in your download don't require code
-# changes).
+# EAR DISEASE DATASET  (Otoscopic Image Dataset — UCI Machine
+# Learning, Kaggle: ucimachinelearning/otoscopic-image-dataset)
 #
-# Expected folder layout (matches the Figshare download):
+# 5-class multiclass task. Class folder names are
+# auto-detected from disk, so slight naming differences in
+# your download don't require code changes.
+#
+# IMPORTANT — this dataset ships FLAT, with NO pre-made
+# train/test split:
 #
 #   root_dir/
-#     training/
-#       <ClassFolder1>/
-#       <ClassFolder2>/
-#       <ClassFolder3>/
-#       <ClassFolder4>/
-#     testing/
-#       <same 4 class folders>
+#     <ClassFolder1>/
+#     <ClassFolder2>/
+#     <ClassFolder3>/
+#     <ClassFolder4>/
+#     <ClassFolder5>/
 #
-# root_dir should point at the top-level "Dataset" folder you
-# downloaded (the one containing "training" and "testing").
+# root_dir should point directly at the folder that CONTAINS
+# the 5 class subfolders.
 #
-# IMPORTANT: pass class_to_idx from the TRAINING instantiation
-# into the TESTING instantiation so both splits use identical
-# integer label indices for the same class names. See
-# run_flower.py for the correct load order.
+# Because there's no built-in split here, the held-out test
+# set and the client train/val partitions are both carved out
+# downstream (see stratified_test_split() below and
+# run_flower.py for the correct order):
+#   1. Load the whole dataset with this class (100%).
+#   2. stratified_test_split() -> 15% test / 85% pool.
+#   3. dirichlet_partition() or iid_partition() splits the
+#      85% pool across clients, each further split into
+#      train/val so that, overall, the dataset is
+#      70% train / 15% val / 15% test.
 #
 # Stores (path, class_idx, original_class_name) per sample.
 # =========================================================
 class EarDiseaseDataset(Dataset):
-    def __init__(self, root_dir, split='Training', class_to_idx=None):
+    def __init__(self, root_dir, class_to_idx=None):
         """
-        split: 'training' or 'testing' — matches the two
-        folders provided in the Chile dataset download.
+        root_dir: folder that directly contains the class
+        subfolders (no 'training'/'testing' split folders for
+        this dataset).
 
         class_to_idx: dict mapping class folder name -> int.
-        If None, it is built from this split's own folder
-        listing (sorted alphabetically for reproducibility).
-        Always build it from 'training' first, then pass it
-        in when loading 'testing' so label indices match.
+        If None, it is built from this folder's own listing
+        (sorted alphabetically for reproducibility).
         """
         self.samples = []   # (path, class_idx, class_name)
-        split_dir = os.path.join(root_dir, split)
 
-        if not os.path.exists(split_dir):
+        if not os.path.exists(root_dir):
             raise FileNotFoundError(
-                f"[EarDiseaseDataset] Split folder not found: {split_dir}\n"
+                f"[EarDiseaseDataset] Folder not found: {root_dir}\n"
                 f"Expected structure:\n"
-                f"  {root_dir}/Training/<4 class folders>\n"
-                f"  {root_dir}/Testing/<4 class folders>\n"
+                f"  {root_dir}/<5 class folders>\n"
                 f"Update ROOT in run_flower.py if your folder is named "
                 f"differently."
             )
 
         class_folders = sorted([
-            d for d in os.listdir(split_dir)
-            if os.path.isdir(os.path.join(split_dir, d))
+            d for d in os.listdir(root_dir)
+            if os.path.isdir(os.path.join(root_dir, d))
         ])
 
         if not class_folders:
             raise RuntimeError(
                 f"[EarDiseaseDataset] No class subfolders found in "
-                f"{split_dir}"
+                f"{root_dir}"
             )
 
         if class_to_idx is None:
@@ -112,11 +114,11 @@ class EarDiseaseDataset(Dataset):
             missing = [c for c in class_folders
                        if c not in self.class_to_idx]
             if missing:
-                print(f"[WARNING] '{split}' contains classes not seen "
-                      f"in the training split's class_to_idx mapping: "
+                print(f"[WARNING] '{root_dir}' contains classes not seen "
+                      f"in the supplied class_to_idx mapping: "
                       f"{missing}. These folders will be SKIPPED — "
-                      f"check that training/testing folder names match "
-                      f"exactly (including case/spacing).")
+                      f"check that folder names match exactly "
+                      f"(including case/spacing).")
 
         self.idx_to_class = {v: k for k, v in self.class_to_idx.items()}
         self.num_classes  = len(self.class_to_idx)
@@ -125,7 +127,7 @@ class EarDiseaseDataset(Dataset):
             if class_name not in self.class_to_idx:
                 continue
             class_idx    = self.class_to_idx[class_name]
-            class_folder = os.path.join(split_dir, class_name)
+            class_folder = os.path.join(root_dir, class_name)
 
             files = sorted([
                 f for f in os.listdir(class_folder)
@@ -138,7 +140,7 @@ class EarDiseaseDataset(Dataset):
                     class_name
                 ))
 
-        self._print_summary(split)
+        self._print_summary("full dataset")
 
     def __len__(self):
         return len(self.samples)
@@ -154,13 +156,13 @@ class EarDiseaseDataset(Dataset):
         """Returns class names ordered by their integer index."""
         return [self.idx_to_class[i] for i in range(self.num_classes)]
 
-    def _print_summary(self, split):
+    def _print_summary(self, label):
         total = len(self.samples)
         by_class = defaultdict(int)
         for _, _, cname in self.samples:
             by_class[cname] += 1
 
-        print(f"\n[Dataset:{split}] Total: {total} | "
+        print(f"\n[Dataset:{label}] Total: {total} | "
               f"Classes: {self.num_classes}")
         for cname in sorted(by_class.keys(),
                              key=lambda c: self.class_to_idx[c]):
@@ -193,6 +195,48 @@ def get_transforms(train=True):
 
 
 # =========================================================
+# STRATIFIED TEST SPLIT  (new — needed because this dataset
+# has no pre-made train/test folders)
+#
+# Carves off a stratified `test_ratio` slice of the FULL
+# dataset as the locked, held-out test set, seen only at
+# server-side evaluation. Everything else ("the pool") goes
+# on to dirichlet_partition()/iid_partition() to be divided
+# across FL clients.
+#
+# Returns plain index/label lists so the pool can be fed
+# straight into dirichlet_partition/iid_partition, and a
+# separate list of test indices to build the test
+# TransformSubset from the SAME underlying dataset object.
+# =========================================================
+def stratified_test_split(indices, labels, test_ratio=0.15, seed=42):
+    set_seed(seed)
+
+    indices = np.array(indices)
+    labels  = np.array(labels)
+
+    splitter = StratifiedShuffleSplit(
+        n_splits=1, test_size=test_ratio, random_state=seed
+    )
+    pool_pos, test_pos = next(splitter.split(indices, labels))
+
+    pool_idx    = indices[pool_pos].tolist()
+    test_idx    = indices[test_pos].tolist()
+    pool_labels = labels[pool_pos].tolist()
+
+    num_classes = int(labels.max()) + 1
+    test_labels = labels[test_pos]
+    counts_str = " ".join(
+        f"C{c}:{int((test_labels == c).sum())}" for c in range(num_classes)
+    )
+    print(f"\n[Split] Stratified test split | test_ratio={test_ratio}")
+    print(f"  Pool (train+val) : {len(pool_idx)}")
+    print(f"  Test (held-out)  : {len(test_idx)} ({counts_str})")
+
+    return pool_idx, pool_labels, test_idx
+
+
+# =========================================================
 # DIRICHLET PARTITION  (non-IID) — generalized to N classes
 #
 # Lower alpha = more heterogeneous (e.g. alpha=0.1 is severe
@@ -203,6 +247,12 @@ def get_transforms(train=True):
 # Returns a list of dicts with 'train' and 'val' index lists
 # (indices refer back into the ORIGINAL dataset, so they can
 # be fed straight into TransformSubset).
+#
+# val_ratio here is relative to the POOL passed in (i.e. after
+# the test set has already been carved out by
+# stratified_test_split). To land on overall proportions of
+# 70% train / 15% val / 15% test across the WHOLE dataset,
+# pass val_ratio = 0.15 / (1 - test_ratio) — see run_flower.py.
 # =========================================================
 def dirichlet_partition(indices, labels,
                         num_clients=4,
@@ -292,125 +342,22 @@ def dirichlet_partition(indices, labels,
 # =========================================================
 # IID PARTITION
 #
-# For your IID-vs-non-IID comparison arm. Implemented as
-# Dirichlet with a very large alpha (near-uniform proportions
-# across clients), which is a standard equivalent of a random
-# stratified split and lets both partition modes share one
-# code path.
+# Stratified IID partition.
+#
+# 1. Split every class equally among all clients.
+# 2. Inside every client perform a stratified
+#    train/validation split using StratifiedShuffleSplit.
+#
+# Same val_ratio convention as dirichlet_partition() above:
+# it's relative to the POOL (post test-split), not the whole
+# dataset.
 # =========================================================
-# def iid_partition(indices, labels, num_clients=4, val_ratio=0.15,
-#                   num_classes=None, seed=42):
-#     print(f"\n[Partition] IID | {num_clients} clients")
-#     return dirichlet_partition(
-#         indices, labels, num_clients=num_clients,
-#         alpha=100.0, val_ratio=val_ratio,
-#         num_classes=num_classes, seed=seed
-#     )
-
-# def iid_partition(indices,
-#                   labels,
-#                   num_clients=4,
-#                   val_ratio=0.10,
-#                   num_classes=None,
-#                   seed=42):
-
-#     set_seed(seed)
-
-#     indices = np.array(indices)
-#     labels = np.array(labels)
-
-#     if num_classes is None:
-#         num_classes = int(labels.max()) + 1
-
-#     # Map original dataset index -> label
-#     index_to_label = {idx: lbl for idx, lbl in zip(indices, labels)}
-
-#     # ---------------------------------------------------
-#     # Step 1: Split each class equally among all clients
-#     # ---------------------------------------------------
-#     client_indices = [[] for _ in range(num_clients)]
-
-#     for c in range(num_classes):
-
-#         class_idx = indices[labels == c]
-
-#         np.random.shuffle(class_idx)
-
-#         splits = np.array_split(class_idx, num_clients)
-
-#         for client in range(num_clients):
-#             client_indices[client].extend(splits[client].tolist())
-
-#     print(f"\n[Partition] Stratified IID | {num_clients} clients")
-
-#     client_splits = []
-
-#     # ---------------------------------------------------
-#     # Step 2: Stratified Train/Validation split
-#     # ---------------------------------------------------
-#     for client in range(num_clients):
-
-#         client_idx = np.array(client_indices[client])
-
-#         np.random.shuffle(client_idx)
-
-#         train_idx = []
-#         val_idx = []
-
-#         for c in range(num_classes):
-
-#             cls = [
-#                 idx for idx in client_idx
-#                 if index_to_label[idx] == c
-#             ]
-
-#             np.random.shuffle(cls)
-
-#             n_val = max(1, int(len(cls) * val_ratio))
-
-#             val_idx.extend(cls[:n_val])
-#             train_idx.extend(cls[n_val:])
-
-#         np.random.shuffle(train_idx)
-#         np.random.shuffle(val_idx)
-
-#         train_labels = np.array(
-#             [index_to_label[idx] for idx in train_idx]
-#         )
-
-#         counts = " ".join(
-#             f"C{c}:{np.sum(train_labels == c)}"
-#             for c in range(num_classes)
-#         )
-
-#         print(
-#             f"Client {client+1}: "
-#             f"train={len(train_idx)} ({counts}) "
-#             f"| val={len(val_idx)}"
-#         )
-
-#         client_splits.append({
-#             "train": train_idx,
-#             "val": val_idx
-#         })
-
-#     return client_splits
 def iid_partition(indices,
                   labels,
                   num_clients=4,
                   val_ratio=0.15,
                   num_classes=None,
                   seed=42):
-
-    """
-    Stratified IID partition.
-
-    1. Split every class equally among all clients.
-    2. Inside every client perform a stratified
-       train/validation split using StratifiedShuffleSplit.
-
-    This is the standard IID protocol used in many FL papers.
-    """
 
     set_seed(seed)
 

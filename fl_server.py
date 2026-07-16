@@ -231,7 +231,7 @@ class FedAvgStrategy(fl.server.strategy.Strategy):
 
     def __init__(self,
                  num_rounds,
-                 num_classes=4,
+                 num_classes=5,
                  class_names=None,
                  min_clients=4,
                  test_dataset=None,
@@ -575,7 +575,7 @@ class FedAvgStrategy(fl.server.strategy.Strategy):
             ax.set_ylim(0, 1.05)
 
         plt.suptitle(
-            "FedAvg Baseline — Ear Disease Classification (Chile, 4-class)\n"
+            "FedAvg Baseline — Ear Disease Classification (Otoscopic, 5-class)\n"
             "Sample-count weighting (n_i / sum n_j) | "
             "Federated privacy-preserving validation"
         )

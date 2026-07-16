@@ -4,8 +4,8 @@ from torchvision import models
 
 class EarDiseaseMultiClassNet(nn.Module):
     """
-    Multiclass classifier over the 4 native Chile dataset classes
-    (Normal, Earwax plug, Myringosclerosis, Chronic otitis media).
+    Multiclass classifier over the 5 native classes of the
+    Otoscopic Image Dataset (UCI Machine Learning, Kaggle).
 
     Backbone: MobileNetV2 pretrained on ImageNet.
     Output: num_classes raw logits — pair with CrossEntropyLoss
@@ -13,7 +13,7 @@ class EarDiseaseMultiClassNet(nn.Module):
     here).
     """
 
-    def __init__(self, num_classes=4, freeze_backbone=True):
+    def __init__(self, num_classes=5, freeze_backbone=True):
         super().__init__()
 
         try:
@@ -41,11 +41,12 @@ class EarDiseaseMultiClassNet(nn.Module):
         return self.model(x)
 
 
-def get_model(num_classes=4, freeze_backbone=True):
+def get_model(num_classes=5, freeze_backbone=True):
     # ── freeze_backbone recommendation ──────────────────────
-    # Dataset is small (~880 images total, split across clients
-    # -> roughly 150-250 train images per client after the FL
-    # partition + val split). Fully fine-tuning MobileNetV2's
+    # If the Otoscopic dataset is similarly small (a few hundred
+    # to ~1-2k images total, split across clients -> a modest
+    # number of train images per client after the FL partition +
+    # val split). Fully fine-tuning MobileNetV2's
     # ~2.2M backbone parameters on that little data per client,
     # every round, is a real overfitting risk (train acc >> val
     # acc), and it also triples your uplink/downlink payload for

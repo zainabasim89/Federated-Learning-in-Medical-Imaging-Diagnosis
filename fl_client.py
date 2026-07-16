@@ -15,9 +15,8 @@ from model import get_model
 
 class EarDiseaseFlowerClient(fl.client.NumPyClient):
     """
-    FedAvg / FedProx client for the 4-class ear disease task
-    (Normal, Earwax plug, Myringosclerosis, Chronic otitis
-    media).
+    FedAvg / FedProx client for the 5-class Otoscopic ear
+    disease task.
 
     Set mu=0.0 for plain FedAvg (standard multiclass CE loss
     only). Set mu>0.0 to add the FedProx proximal term:
@@ -38,7 +37,7 @@ class EarDiseaseFlowerClient(fl.client.NumPyClient):
                  client_id,
                  local_dataset,
                  val_dataset,
-                 num_classes=4,
+                 num_classes=5,
                  local_epochs=5,
                  batch_size=16,
                  lr=1e-3,
