@@ -82,7 +82,7 @@ else:
 #   ROOT/<Class4>/
 #   ROOT/<Class5>/
 # UPDATE THIS to match where you unzipped the Kaggle download.
-ROOT = os.path.join(os.path.dirname(__file__), 'Dataset')
+ROOT = os.path.join(os.path.dirname(__file__), 'Otoscopic_Data')
 
 # ── Results folder auto-named from BOTH switches, so nothing
 #    from a previous combination ever gets overwritten ──────

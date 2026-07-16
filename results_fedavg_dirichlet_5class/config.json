@@ -1,0 +1,29 @@
+{
+  "algorithm": "FedAvg",
+  "strategy_mode": "fedavg",
+  "mu": 0.0,
+  "task": "Multiclass (5-class)",
+  "num_classes": 5,
+  "class_names": [
+    "Acute Otitis Media",
+    "Cerumen Impaction",
+    "Chronic Otitis Media",
+    "Myringosclerosis",
+    "Normal"
+  ],
+  "num_clients": 3,
+  "num_rounds": 1,
+  "partition_mode": "dirichlet",
+  "alpha": 0.5,
+  "local_epochs": 1,
+  "batch_size": 16,
+  "lr": 0.001,
+  "es_patience": 3,
+  "seed": 42,
+  "test_ratio": 0.15,
+  "val_ratio_of_pool": 0.17647058823529413,
+  "overall_split": "70% train / 15% val / 15% test",
+  "freeze_backbone": true,
+  "model": "MobileNetV2",
+  "dataset": "Otoscopic Image Dataset (UCI Machine Learning, Kaggle)"
+}
