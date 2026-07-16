@@ -10,6 +10,10 @@ Otoscopic_Data/Normal
 /results_fedavg_dirichlet_4class
 /results_fedavg_iid_4class
 /results_fedprox_dirichlet_4class
-/codeD1
+/codeD1/dataset.py
+/codeD1/fl_client.py
+/codeD1/fl_server.py
+/codeD1/model.py
+/codeD1/run_flower.py
 /codeD2
 /Dataset1Code
